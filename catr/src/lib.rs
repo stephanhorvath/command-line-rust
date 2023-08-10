@@ -7,7 +7,7 @@ use std::io::{self, BufRead, BufReader};
 pub struct Config {
     files: Vec<String>,
     number_lines: bool,
-    number_nonblank_lines: bool,
+    number_nonblank: bool,
 }
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -16,7 +16,24 @@ pub fn run(config: Config) -> MyResult<()> {
     for filename in config.files {
         match open(&filename) {
             Err(err) => eprintln!("Failed to open {}: {}", filename, err),
-            Ok(_) => println!("Opened {}", filename),
+            Ok(f) => {
+                let mut last_num = 0;
+                for (index, line) in f.lines().enumerate() {
+                    let line = line?;
+                    if config.number_lines {
+                        println!("{:>6}\t{}", index + 1, line);
+                    } else if config.number_nonblank {
+                        if !line.is_empty() {
+                            last_num += 1;
+                            println!("{:>6}\t{}", last_num, line);
+                        } else {
+                            println!("");
+                        }
+                    } else {
+                        println!("{}", line);
+                    }
+                }
+            }
         }
     }
     Ok(())
@@ -61,6 +78,6 @@ pub fn get_args() -> MyResult<Config> {
     Ok(Config {
         files: matches.values_of_lossy("files").unwrap(),
         number_lines: matches.is_present("number_lines"),
-        number_nonblank_lines: matches.is_present("number_nonblank"),
+        number_nonblank: matches.is_present("number_nonblank"),
     })
 }
