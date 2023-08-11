@@ -42,28 +42,22 @@ pub fn get_args() -> MyResult<Config> {
         )
         .get_matches();
 
+    let lines = matches
+        .value_of("lines")
+        .map(parse_positive_int)
+        .transpose()
+        .map_err(|e| format!("illegal line count -- {}", e))?;
+
+    let bytes = matches
+        .value_of("bytes")
+        .map(parse_positive_int)
+        .transpose()
+        .map_err(|e| format!("illegal byte count -- {}", e))?;
+
     Ok(Config {
         files: matches.values_of_lossy("files").unwrap(),
-        lines: if matches.is_present("lines") {
-            match parse_positive_int(matches.value_of("lines").unwrap()) {
-                Ok(n) => n,
-                Err(e) => panic!("illegal line count -- {}", e),
-            }
-        } else {
-            10
-        },
-        bytes: if !matches.is_present("bytes") {
-            None
-        } else {
-            match parse_positive_int(
-                matches
-                    .value_of("bytes")
-                    .expect("Something went really wrong"),
-            ) {
-                Ok(v) => Some(v),
-                Err(v) => panic!("illegal byte count -- {}", v),
-            }
-        },
+        lines: lines.unwrap(),
+        bytes,
     })
 }
 
